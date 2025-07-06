@@ -97,50 +97,72 @@
   <a href="index.html" class="back">⬅ Back to 7-PAUL</a>
 
   <script>
-    const STORAGE_KEY = 'most1_votes';
-    const STORAGE_DATE_KEY = 'most1_votes_date';
-    const RESET_DAYS = 5;
+  const STORAGE_KEY = 'most1_votes';
+  const STORAGE_DATE_KEY = 'most1_votes_date';
+  const STORAGE_VOTED_KEY = 'most1_voted_flags'; // Track voted users
+  const RESET_DAYS = 5;
 
-    // Load votes or initialize
-    function loadVotes() {
-      let storedDate = localStorage.getItem(STORAGE_DATE_KEY);
-      let now = new Date().getTime();
+  // Load votes or initialize
+  function loadVotes() {
+    let storedDate = localStorage.getItem(STORAGE_DATE_KEY);
+    let now = new Date().getTime();
 
-      if (!storedDate || now - storedDate > RESET_DAYS * 24 * 60 * 60 * 1000) {
-        // More than RESET_DAYS passed or no date saved: reset votes
-        localStorage.setItem(STORAGE_DATE_KEY, now);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([0, 0, 0, 0, 0]));
-        return [0, 0, 0, 0, 0];
-      } else {
-        // Load votes from storage
-        let votes = localStorage.getItem(STORAGE_KEY);
-        return votes ? JSON.parse(votes) : [0, 0, 0, 0, 0];
+    if (!storedDate || now - storedDate > RESET_DAYS * 24 * 60 * 60 * 1000) {
+      localStorage.setItem(STORAGE_DATE_KEY, now);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([0, 0, 0, 0, 0]));
+      localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false, false, false, false, false]));
+      return {
+        votes: [0, 0, 0, 0, 0],
+        votedFlags: [false, false, false, false, false]
+      };
+    } else {
+      let votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[0,0,0,0,0]');
+      let votedFlags = JSON.parse(localStorage.getItem(STORAGE_VOTED_KEY) || '[false,false,false,false,false]');
+      return { votes, votedFlags };
+    }
+  }
+
+  function saveVotes(votes) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+  }
+
+  function saveVotedFlags(flags) {
+    localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify(flags));
+  }
+
+  function displayVotes(votes) {
+    votes.forEach((count, idx) => {
+      document.getElementById(`votes-${idx}`).textContent = `Votes: ${count}`;
+    });
+  }
+
+  function updateButtonState(votedFlags) {
+    votedFlags.forEach((voted, idx) => {
+      const btn = document.getElementById(`vote-btn-${idx}`);
+      if (voted) {
+        btn.disabled = true;
+        btn.textContent = 'Voted';
+        btn.style.backgroundColor = '#555';
+        btn.style.cursor = 'not-allowed';
       }
-    }
+    });
+  }
 
-    // Save votes
-    function saveVotes(votes) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
-    }
+  function vote(index) {
+    if (votesData.votedFlags[index]) return; // Already voted
 
-    // Display votes on page
-    function displayVotes(votes) {
-      votes.forEach((count, idx) => {
-        document.getElementById(`votes-${idx}`).textContent = `Votes: ${count}`;
-      });
-    }
+    votesData.votes[index]++;
+    votesData.votedFlags[index] = true;
 
-    // Vote function
-    function vote(index) {
-      votes[index]++;
-      saveVotes(votes);
-      displayVotes(votes);
-    }
+    saveVotes(votesData.votes);
+    saveVotedFlags(votesData.votedFlags);
 
-    // Init votes on page load
-    let votes = loadVotes();
-    displayVotes(votes);
-  </script>
+    displayVotes(votesData.votes);
+    updateButtonState(votesData.votedFlags);
+  }
 
-</body>
-</html>
+  // Initialize
+  let votesData = loadVotes();
+  displayVotes(votesData.votes);
+  updateButtonState(votesData.votedFlags);
+</script>
