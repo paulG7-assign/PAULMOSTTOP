@@ -114,22 +114,19 @@
     const STORAGE_KEY = 'most1_votes';
     const STORAGE_DATE_KEY = 'most1_votes_date';
     const STORAGE_VOTED_KEY = 'most1_voted_flags';
-    const RESET_DAYS = 0;
     const HAS_VOTED_ANY_KEY = 'hasVotedAnyMost';
+    const RESET_DAYS = 5;
 
     function loadVotes() {
       const storedDate = localStorage.getItem(STORAGE_DATE_KEY);
       const now = Date.now();
 
-      if (!storedDate || now - storedDate > RESET_DAYS * 0 * 0 * 0 * 0) {
+      if (!storedDate || now - storedDate > RESET_DAYS * 86400000) {
         localStorage.setItem(STORAGE_DATE_KEY, now);
         localStorage.setItem(STORAGE_KEY, JSON.stringify([0,0,0,0,0]));
         localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false,false,false,false,false]));
-        localStorage.removeItem(HAS_VOTED_ANY_KEY); // reset global vote flag
-        return {
-          votes: [0,0,0,0,0],
-          votedFlags: [false,false,false,false,false]
-        };
+        localStorage.removeItem(HAS_VOTED_ANY_KEY); // Reset global flag
+        return { votes: [0,0,0,0,0], votedFlags: [false,false,false,false,false] };
       } else {
         const votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[0,0,0,0,0]');
         const votedFlags = JSON.parse(localStorage.getItem(STORAGE_VOTED_KEY) || '[false,false,false,false,false]');
@@ -162,18 +159,16 @@
     }
 
     function disableAllVotes() {
-      const buttons = document.querySelectorAll('.vote-button');
-      buttons.forEach(btn => {
+      document.querySelectorAll('.vote-button').forEach(btn => {
         btn.disabled = true;
         btn.textContent = 'Vote Disabled';
         btn.style.backgroundColor = '#555';
-        btn.style.cursor = 'not-allowed';
       });
     }
 
     function vote(index) {
       if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
-        alert('You have already voted on another leaderboard. Only one vote allowed.');
+        alert('You have already voted on another leaderboard.');
         disableAllVotes();
         return;
       }
@@ -185,28 +180,30 @@
 
       saveVotes(votesData.votes);
       saveVotedFlags(votesData.votedFlags);
-
-      // Mark global flag
       localStorage.setItem(HAS_VOTED_ANY_KEY, 'true');
 
       displayVotes(votesData.votes);
       updateButtonState(votesData.votedFlags);
-
-      // Disable all other buttons
       disableAllVotes();
-
-      document.getElementById('info-msg').textContent = 'Thanks for voting! You can only vote once across all leaderboards.';
+      document.getElementById('info-msg').textContent = 'Thanks! You can only vote once total across all MOST pages.';
     }
 
-    // On load
+    function resetVotesNow() {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_DATE_KEY);
+      localStorage.removeItem(STORAGE_VOTED_KEY);
+      localStorage.removeItem(HAS_VOTED_ANY_KEY);
+      alert('Votes have been reset. Refresh the page.');
+      location.reload();
+    }
+
     const votesData = loadVotes();
     displayVotes(votesData.votes);
     updateButtonState(votesData.votedFlags);
 
-    // Disable all if already voted anywhere
-    if(localStorage.getItem(HAS_VOTED_ANY_KEY)) {
+    if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
       disableAllVotes();
-      document.getElementById('info-msg').textContent = 'You have already voted on another leaderboard. Voting disabled.';
+      document.getElementById('info-msg').textContent = 'You have already voted on another leaderboard.';
     }
   </script>
 
