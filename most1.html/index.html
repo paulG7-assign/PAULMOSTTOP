@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MOST 1 – Leaderboard</title>
+  <meta charset="UTF-8" />
+  <title>Leaderboard MOST 1</title>
   <style>
     body { background: black; color: white; font-family: sans-serif; text-align: center; padding: 40px; }
     .entry { background: #111; margin: 20px auto; padding: 15px; max-width: 400px; border-radius: 5px; }
@@ -18,67 +18,75 @@
   <div id="info-msg"></div>
 
   <script>
-    const USERS = ["NAVARRO", "ABEJUELA", "BODUMO", "ATIENZA","LORENZO"];
-    const PAGE_ID = "most1";
-    const STORAGE_VOTES = PAGE_ID + "_votes";
-    const STORAGE_DATE = PAGE_ID + "_votes_date";
-    const STORAGE_VOTED = PAGE_ID + "_voted";
-    const RESET_MS = 5 * 24 * 60 * 60 * 1000;
+    const USERS = ["NAVARO", "ABEJUELA", "BODUMO", "ATIENZA"];
+    const VOTE_API = "api/vote.ts";
+    let votes = [0,0,0,0];
+    let voted = false;
 
-    function load() {
-      const storedDate = localStorage.getItem(STORAGE_DATE);
-      const now = Date.now();
+    function saveVotedFlag() {
+      localStorage.setItem("most1_voted", "true");
+    }
+    function hasVoted() {
+      return localStorage.getItem("most1_voted") === "true";
+    }
 
-      if (!storedDate || now - parseInt(storedDate) > RESET_MS) {
-        localStorage.setItem(STORAGE_DATE, now.toString());
-        localStorage.setItem(STORAGE_VOTES, JSON.stringify([0,0,0,0]));
-        localStorage.removeItem(STORAGE_VOTED);
-        return { votes: [0,0,0,0], voted: false };
+    async function fetchVotes() {
+      try {
+        const res = await fetch(VOTE_API);
+        const data = await res.json();
+        votes = data.votes;
+        render();
+      } catch(e) {
+        document.getElementById("info-msg").textContent = "Error fetching votes";
       }
-      return {
-        votes: JSON.parse(localStorage.getItem(STORAGE_VOTES) || "[0,0,0,0]"),
-        voted: localStorage.getItem(STORAGE_VOTED) !== null
-      };
     }
 
-    function save(votes, voted) {
-      localStorage.setItem(STORAGE_VOTES, JSON.stringify(votes));
-      if (voted) localStorage.setItem(STORAGE_VOTED, "1");
-    }
-
-    function vote(i) {
-      if (data.voted) return;
-      data.votes[i]++;
-      data.voted = true;
-      save(data.votes, true);
-      render();
+    async function vote(index) {
+      if (voted || hasVoted()) {
+        alert("You already voted on this page.");
+        return;
+      }
+      try {
+        const res = await fetch(VOTE_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ index }),
+        });
+        const data = await res.json();
+        votes = data.votes;
+        voted = true;
+        saveVotedFlag();
+        render();
+      } catch(e) {
+        alert("Vote failed. Try again.");
+      }
     }
 
     function render() {
       const board = document.getElementById("leaderboard");
       board.innerHTML = "";
+      const combined = USERS.map((name, i) => ({ name, votes: votes[i], index: i }));
+      combined.sort((a,b) => b.votes - a.votes);
 
-      const arr = USERS.map((name,i) => ({ name, votes: data.votes[i], index: i }));
-      arr.sort((a,b) => b.votes - a.votes);
-
-      arr.forEach((u, rank) => {
+      combined.forEach((user, rank) => {
         const div = document.createElement("div");
         div.className = "entry";
         div.innerHTML = `
-          <div><strong>${["🥇","🥈","🥉"][rank]||rank+1} ${u.name}</strong></div>
-          <div class="votes">Votes: ${u.votes}</div>
-          <button class="vote-button" onclick="vote(${u.index})" ${data.voted ? "disabled" : ""}>Vote</button>
+          <div><strong>${["🥇","🥈","🥉"][rank]||rank+1} ${user.name}</strong></div>
+          <div class="votes">Votes: ${user.votes}</div>
+          <button class="vote-button" onclick="vote(${user.index})" ${voted || hasVoted() ? "disabled" : ""}>Vote</button>
         `;
         board.appendChild(div);
       });
 
-      if (data.voted) {
+      if (voted || hasVoted()) {
         document.getElementById("info-msg").textContent = "You already voted on this page.";
+      } else {
+        document.getElementById("info-msg").textContent = "";
       }
     }
 
-    const data = load();
-    render();
+    fetchVotes();
   </script>
 </body>
 </html>
