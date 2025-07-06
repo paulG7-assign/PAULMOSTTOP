@@ -99,47 +99,99 @@
   <script>
     const STORAGE_KEY = 'most1_votes';
     const STORAGE_DATE_KEY = 'most1_votes_date';
+    const STORAGE_VOTED_KEY = 'most1_voted_flags';
+    const HAS_VOTED_ANY_KEY = 'hasVotedAnyMost';
     const RESET_DAYS = 5;
 
-    // Load votes or initialize
     function loadVotes() {
-      let storedDate = localStorage.getItem(STORAGE_DATE_KEY);
-      let now = new Date().getTime();
+      const storedDate = localStorage.getItem(STORAGE_DATE_KEY);
+      const now = Date.now();
 
-      if (!storedDate || now - storedDate > RESET_DAYS * 24 * 60 * 60 * 1000) {
-        // More than RESET_DAYS passed or no date saved: reset votes
+      if (!storedDate || now - storedDate > RESET_DAYS * 86400000) {
         localStorage.setItem(STORAGE_DATE_KEY, now);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([0, 0, 0, 0, 0]));
-        return [0, 0, 0, 0, 0];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([0,0,0,0,0]));
+        localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false,false,false,false,false]));
+        localStorage.removeItem(HAS_VOTED_ANY_KEY); // Reset global flag
+        return { votes: [0,0,0,0,0], votedFlags: [false,false,false,false,false] };
       } else {
-        // Load votes from storage
-        let votes = localStorage.getItem(STORAGE_KEY);
-        return votes ? JSON.parse(votes) : [0, 0, 0, 0, 0];
+        const votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[0,0,0,0,0]');
+        const votedFlags = JSON.parse(localStorage.getItem(STORAGE_VOTED_KEY) || '[false,false,false,false,false]');
+        return { votes, votedFlags };
       }
     }
 
-    // Save votes
     function saveVotes(votes) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
     }
 
-    // Display votes on page
+    function saveVotedFlags(flags) {
+      localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify(flags));
+    }
+
     function displayVotes(votes) {
       votes.forEach((count, idx) => {
         document.getElementById(`votes-${idx}`).textContent = `Votes: ${count}`;
       });
     }
 
-    // Vote function
-    function vote(index) {
-      votes[index]++;
-      saveVotes(votes);
-      displayVotes(votes);
+    function updateButtonState(votedFlags) {
+      votedFlags.forEach((voted, idx) => {
+        const btn = document.getElementById(`vote-btn-${idx}`);
+        if (voted) {
+          btn.disabled = true;
+          btn.textContent = 'Voted';
+        }
+      });
     }
 
-    // Init votes on page load
-    let votes = loadVotes();
-    displayVotes(votes);
+    function disableAllVotes() {
+      document.querySelectorAll('.vote-button').forEach(btn => {
+        btn.disabled = true;
+        btn.textContent = 'Vote Disabled';
+        btn.style.backgroundColor = '#555';
+      });
+    }
+
+    function vote(index) {
+      if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
+        alert('You have already voted on another leaderboard.');
+        disableAllVotes();
+        return;
+      }
+
+      if (votesData.votedFlags[index]) return;
+
+      votesData.votes[index]++;
+      votesData.votedFlags[index] = true;
+
+      saveVotes(votesData.votes);
+      saveVotedFlags(votesData.votedFlags);
+      localStorage.setItem(HAS_VOTED_ANY_KEY, 'true');
+
+      displayVotes(votesData.votes);
+      updateButtonState(votesData.votedFlags);
+      disableAllVotes();
+      document.getElementById('info-msg').textContent = 'Thanks! You can only vote once total across all MOST pages.';
+    }
+
+    function resetVotesNow() {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_DATE_KEY);
+      localStorage.removeItem(STORAGE_VOTED_KEY);
+      localStorage.removeItem(HAS_VOTED_ANY_KEY);
+      alert('Votes have been reset. Refresh the page.');
+      location.reload();
+    }
+
+    const votesData = loadVotes();
+    displayVotes(votesData.votes);
+    updateButtonState(votesData.votedFlags);
+
+    if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
+      disableAllVotes();
+      document.getElementById('info-msg').textContent = 'You have already voted on another leaderboard.';
+    }
+  </script>
   </script>
 
 </body>
