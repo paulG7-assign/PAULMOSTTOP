@@ -114,14 +114,14 @@
     const STORAGE_KEY = 'most1_votes';
     const STORAGE_DATE_KEY = 'most1_votes_date';
     const STORAGE_VOTED_KEY = 'most1_voted_flags';
-    const RESET_DAYS = 5;
+    const RESET_DAYS = 0;
     const HAS_VOTED_ANY_KEY = 'hasVotedAnyMost';
 
     function loadVotes() {
       const storedDate = localStorage.getItem(STORAGE_DATE_KEY);
       const now = Date.now();
 
-      if (!storedDate || now - storedDate > RESET_DAYS * 24 * 60 * 60 * 1000) {
+      if (!storedDate || now - storedDate > RESET_DAYS * 0 * 0 * 0 * 0) {
         localStorage.setItem(STORAGE_DATE_KEY, now);
         localStorage.setItem(STORAGE_KEY, JSON.stringify([0,0,0,0,0]));
         localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false,false,false,false,false]));
