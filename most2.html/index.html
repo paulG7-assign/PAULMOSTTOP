@@ -1,197 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Leaderboard – MOST 1</title>
+  <meta charset="UTF-8">
+  <title>MOST SMART – Leaderboard</title>
   <style>
-    body {
-      background-color: #000;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-    h1 {
-      font-size: 36px;
-      margin-bottom: 30px;
-    }
-    .leaderboard {
-      list-style: none;
-      padding: 0;
-      max-width: 500px;
-      margin: 0 auto;
-      text-align: left;
-    }
-    .leaderboard li {
-      background: #111;
-      margin: 15px 0;
-      padding: 20px;
-      border-radius: 5px;
-      font-size: 18px;
-      position: relative;
-    }
-    .vote-button {
-      margin-top: 10px;
-      padding: 8px 15px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .vote-button:hover {
-      background-color: #218838;
-    }
-    .votes {
-      color: #00ff88;
-      font-weight: bold;
-      margin-top: 8px;
-    }
-    a.back {
-      display: inline-block;
-      margin-top: 40px;
-      padding: 10px 20px;
-      background-color: #007BFF;
-      color: white;
-      text-decoration: none;
-      border-radius: 5px;
-    }
-    a.back:hover {
-      background-color: #0056b3;
-    }
+    body { background: black; color: white; font-family: sans-serif; text-align: center; padding: 40px; }
+    .entry { background: #111; margin: 20px auto; padding: 15px; max-width: 400px; border-radius: 5px; }
+    .votes { color: #00ff88; font-weight: bold; }
+    .vote-button { margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor:pointer; }
+    .vote-button:disabled { background: #555; cursor: not-allowed; }
+    #info-msg { margin-top:20px; color:#ffcc00; }
   </style>
 </head>
 <body>
-
-  <h1>Leaderboard – MOST NONCHALANT</h1>
-
-  <ul class="leaderboard">
-    <li>
-      🥇 <strong>VITO</strong> – DIKO KILALA KAYA DIKO ALAM LALGAY KO.<br />
-      <button class="vote-button" onclick="vote(0)">Vote</button>
-      <div class="votes" id="votes-0">Votes: 0</div>
-    </li>
-    <li>
-      🥈 <strong>TELEGIO</strong> – NONCHALANT NA POGI :/<br />
-      <button class="vote-button" onclick="vote(1)">Vote</button>
-      <div class="votes" id="votes-1">Votes: 0</div>
-    </li>
-    <li>
-      🥉 <strong>DEVERA</strong> – DIKO ALAM BAT AKO NAGING NONCHALANT PERO CGE.<br />
-      <button class="vote-button" onclick="vote(2)">Vote</button>
-      <div class="votes" id="votes-2">Votes: 0</div>
-    </li>
-    <li>
-      4. <strong>NETABA</strong> – DIKO KILALA KAYA DIKO ALAM LALGAY KO.<br />
-      <button class="vote-button" onclick="vote(3)">Vote</button>
-      <div class="votes" id="votes-3">Votes: 0</div>
-    </li>
-    <li>
-      5. <strong>FIDEL</strong> – NONCHALANT TALAGA YAN PAG DIKA KILALA, PERO BALAGBAG.<br />
-      <button class="vote-button" onclick="vote(4)">Vote</button>
-      <div class="votes" id="votes-4">Votes: 0</div>
-    </li>
-  </ul>
-
-  <a href="index.html" class="back">⬅ Back to 7-PAUL</a>
+  <h1>Leaderboard – MOST 1</h1>
+  <div id="leaderboard"></div>
+  <div id="info-msg"></div>
 
   <script>
-    const STORAGE_KEY = 'most1_votes';
-    const STORAGE_DATE_KEY = 'most1_votes_date';
-    const STORAGE_VOTED_KEY = 'most1_voted_flags';
-    const HAS_VOTED_ANY_KEY = 'hasVotedAnyMost';
-    const RESET_DAYS = 5;
+    const USERS = ["CALUBAN", "PILI", "ALAMPAY", "JESSIE","ABEJUELA"];
+    const PAGE_ID = "most2";
+    const STORAGE_VOTES = PAGE_ID + "_votes";
+    const STORAGE_DATE = PAGE_ID + "_votes_date";
+    const STORAGE_VOTED = PAGE_ID + "_voted";
+    const RESET_MS = 5 * 24 * 60 * 60 * 1000;
 
-    function loadVotes() {
-      const storedDate = localStorage.getItem(STORAGE_DATE_KEY);
+    function load() {
+      const storedDate = localStorage.getItem(STORAGE_DATE);
       const now = Date.now();
 
-      if (!storedDate || now - storedDate > RESET_DAYS * 86400000) {
-        localStorage.setItem(STORAGE_DATE_KEY, now);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([0,0,0,0,0]));
-        localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false,false,false,false,false]));
-        localStorage.removeItem(HAS_VOTED_ANY_KEY); // Reset global flag
-        return { votes: [0,0,0,0,0], votedFlags: [false,false,false,false,false] };
-      } else {
-        const votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[0,0,0,0,0]');
-        const votedFlags = JSON.parse(localStorage.getItem(STORAGE_VOTED_KEY) || '[false,false,false,false,false]');
-        return { votes, votedFlags };
+      if (!storedDate || now - parseInt(storedDate) > RESET_MS) {
+        localStorage.setItem(STORAGE_DATE, now.toString());
+        localStorage.setItem(STORAGE_VOTES, JSON.stringify([0,0,0,0]));
+        localStorage.removeItem(STORAGE_VOTED);
+        return { votes: [0,0,0,0], voted: false };
+      }
+      return {
+        votes: JSON.parse(localStorage.getItem(STORAGE_VOTES) || "[0,0,0,0]"),
+        voted: localStorage.getItem(STORAGE_VOTED) !== null
+      };
+    }
+
+    function save(votes, voted) {
+      localStorage.setItem(STORAGE_VOTES, JSON.stringify(votes));
+      if (voted) localStorage.setItem(STORAGE_VOTED, "1");
+    }
+
+    function vote(i) {
+      if (data.voted) return;
+      data.votes[i]++;
+      data.voted = true;
+      save(data.votes, true);
+      render();
+    }
+
+    function render() {
+      const board = document.getElementById("leaderboard");
+      board.innerHTML = "";
+
+      const arr = USERS.map((name,i) => ({ name, votes: data.votes[i], index: i }));
+      arr.sort((a,b) => b.votes - a.votes);
+
+      arr.forEach((u, rank) => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerHTML = `
+          <div><strong>${["🥇","🥈","🥉"][rank]||rank+1} ${u.name}</strong></div>
+          <div class="votes">Votes: ${u.votes}</div>
+          <button class="vote-button" onclick="vote(${u.index})" ${data.voted ? "disabled" : ""}>Vote</button>
+        `;
+        board.appendChild(div);
+      });
+
+      if (data.voted) {
+        document.getElementById("info-msg").textContent = "You already voted on this page.";
       }
     }
 
-    function saveVotes(votes) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
-    }
-
-    function saveVotedFlags(flags) {
-      localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify(flags));
-    }
-
-    function displayVotes(votes) {
-      votes.forEach((count, idx) => {
-        document.getElementById(`votes-${idx}`).textContent = `Votes: ${count}`;
-      });
-    }
-
-    function updateButtonState(votedFlags) {
-      votedFlags.forEach((voted, idx) => {
-        const btn = document.getElementById(`vote-btn-${idx}`);
-        if (voted) {
-          btn.disabled = true;
-          btn.textContent = 'Voted';
-        }
-      });
-    }
-
-    function disableAllVotes() {
-      document.querySelectorAll('.vote-button').forEach(btn => {
-        btn.disabled = true;
-        btn.textContent = 'Vote Disabled';
-        btn.style.backgroundColor = '#555';
-      });
-    }
-
-    function vote(index) {
-      if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
-        alert('You have already voted on another leaderboard.');
-        disableAllVotes();
-        return;
-      }
-
-      if (votesData.votedFlags[index]) return;
-
-      votesData.votes[index]++;
-      votesData.votedFlags[index] = true;
-
-      saveVotes(votesData.votes);
-      saveVotedFlags(votesData.votedFlags);
-      localStorage.setItem(HAS_VOTED_ANY_KEY, 'true');
-
-      displayVotes(votesData.votes);
-      updateButtonState(votesData.votedFlags);
-      disableAllVotes();
-      document.getElementById('info-msg').textContent = 'Thanks! You can only vote once total across all MOST pages.';
-    }
-
-    function resetVotesNow() {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_DATE_KEY);
-      localStorage.removeItem(STORAGE_VOTED_KEY);
-      localStorage.removeItem(HAS_VOTED_ANY_KEY);
-      alert('Votes have been reset. Refresh the page.');
-      location.reload();
-    }
-
-    const votesData = loadVotes();
-    displayVotes(votesData.votes);
-    updateButtonState(votesData.votedFlags);
-
-    if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
-      disableAllVotes();
-      document.getElementById('info-msg').textContent = 'You have already voted on another leaderboard.';
-    }
+    const data = load();
+    render();
   </script>
-
 </body>
 </html>
