@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Leaderboard – MOST 1</title>
+  <style>
+    body {
+      background-color: #000;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 30px;
+    }
+    .leaderboard {
+      list-style: none;
+      padding: 0;
+      max-width: 500px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    .leaderboard li {
+      background: #111;
+      margin: 15px 0;
+      padding: 20px;
+      border-radius: 5px;
+      font-size: 18px;
+      position: relative;
+    }
+    .vote-button {
+      margin-top: 10px;
+      padding: 8px 15px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .vote-button:hover {
+      background-color: #218838;
+    }
+    .votes {
+      color: #00ff88;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    a.back {
+      display: inline-block;
+      margin-top: 40px;
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    a.back:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Leaderboard – MOST NONCHALANT</h1>
+
+  <ul class="leaderboard">
+    <li>
+      🥇 <strong>VITO</strong> – DIKO KILALA KAYA DIKO ALAM LALGAY KO.<br />
+      <button class="vote-button" onclick="vote(0)">Vote</button>
+      <div class="votes" id="votes-0">Votes: 0</div>
+    </li>
+    <li>
+      🥈 <strong>TELEGIO</strong> – NONCHALANT NA POGI :/<br />
+      <button class="vote-button" onclick="vote(1)">Vote</button>
+      <div class="votes" id="votes-1">Votes: 0</div>
+    </li>
+    <li>
+      🥉 <strong>DEVERA</strong> – DIKO ALAM BAT AKO NAGING NONCHALANT PERO CGE.<br />
+      <button class="vote-button" onclick="vote(2)">Vote</button>
+      <div class="votes" id="votes-2">Votes: 0</div>
+    </li>
+    <li>
+      4. <strong>NETABA</strong> – DIKO KILALA KAYA DIKO ALAM LALGAY KO.<br />
+      <button class="vote-button" onclick="vote(3)">Vote</button>
+      <div class="votes" id="votes-3">Votes: 0</div>
+    </li>
+    <li>
+      5. <strong>FIDEL</strong> – NONCHALANT TALAGA YAN PAG DIKA KILALA, PERO BALAGBAG.<br />
+      <button class="vote-button" onclick="vote(4)">Vote</button>
+      <div class="votes" id="votes-4">Votes: 0</div>
+    </li>
+  </ul>
+
+  <a href="index.html" class="back">⬅ Back to 7-PAUL</a>
+
+  <script>
+    const STORAGE_KEY = 'most1_votes';
+    const STORAGE_DATE_KEY = 'most1_votes_date';
+    const RESET_DAYS = 5;
+
+    // Load votes or initialize
+    function loadVotes() {
+      let storedDate = localStorage.getItem(STORAGE_DATE_KEY);
+      let now = new Date().getTime();
+
+      if (!storedDate || now - storedDate > RESET_DAYS * 24 * 60 * 60 * 1000) {
+        // More than RESET_DAYS passed or no date saved: reset votes
+        localStorage.setItem(STORAGE_DATE_KEY, now);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([0, 0, 0, 0, 0]));
+        return [0, 0, 0, 0, 0];
+      } else {
+        // Load votes from storage
+        let votes = localStorage.getItem(STORAGE_KEY);
+        return votes ? JSON.parse(votes) : [0, 0, 0, 0, 0];
+      }
+    }
+
+    // Save votes
+    function saveVotes(votes) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+    }
+
+    // Display votes on page
+    function displayVotes(votes) {
+      votes.forEach((count, idx) => {
+        document.getElementById(`votes-${idx}`).textContent = `Votes: ${count}`;
+      });
+    }
+
+    // Vote function
+    function vote(index) {
+      votes[index]++;
+      saveVotes(votes);
+      displayVotes(votes);
+    }
+
+    // Init votes on page load
+    let votes = loadVotes();
+    displayVotes(votes);
+  </script>
+
+</body>
+</html>
