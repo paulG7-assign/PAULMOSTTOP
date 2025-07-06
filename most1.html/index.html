@@ -111,101 +111,111 @@
   <div class="info-msg" id="info-msg"></div>
 
   <script>
-    const STORAGE_KEY = 'most1_votes';
-    const STORAGE_DATE_KEY = 'most1_votes_date';
-    const STORAGE_VOTED_KEY = 'most1_voted_flags';
-    const HAS_VOTED_ANY_KEY = 'hasVotedAnyMost';
-    const RESET_DAYS = 5;
+  const USERS = ["User1", "User2", "User3", "User4", "User5"];
+  const STORAGE_KEY = 'mostX_votes'; // replace X per file
+  const STORAGE_DATE_KEY = 'mostX_votes_date';
+  const STORAGE_VOTED_KEY = 'mostX_voted_flags';
+  const HAS_VOTED_ANY_KEY = 'hasVotedAnyMost';
+  const RESET_DAYS = 5;
 
-    function loadVotes() {
-      const storedDate = localStorage.getItem(STORAGE_DATE_KEY);
-      const now = Date.now();
+  function loadVotes() {
+    const storedDate = localStorage.getItem(STORAGE_DATE_KEY);
+    const now = Date.now();
 
-      if (!storedDate || now - storedDate > RESET_DAYS * 86400000) {
-        localStorage.setItem(STORAGE_DATE_KEY, now);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([0,0,0,0,0]));
-        localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false,false,false,false,false]));
-        localStorage.removeItem(HAS_VOTED_ANY_KEY); // Reset global flag
-        return { votes: [0,0,0,0,0], votedFlags: [false,false,false,false,false] };
-      } else {
-        const votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[0,0,0,0,0]');
-        const votedFlags = JSON.parse(localStorage.getItem(STORAGE_VOTED_KEY) || '[false,false,false,false,false]');
-        return { votes, votedFlags };
-      }
-    }
-
-    function saveVotes(votes) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
-    }
-
-    function saveVotedFlags(flags) {
-      localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify(flags));
-    }
-
-    function displayVotes(votes) {
-      votes.forEach((count, idx) => {
-        document.getElementById(`votes-${idx}`).textContent = `Votes: ${count}`;
-      });
-    }
-
-    function updateButtonState(votedFlags) {
-      votedFlags.forEach((voted, idx) => {
-        const btn = document.getElementById(`vote-btn-${idx}`);
-        if (voted) {
-          btn.disabled = true;
-          btn.textContent = 'Voted';
-        }
-      });
-    }
-
-    function disableAllVotes() {
-      document.querySelectorAll('.vote-button').forEach(btn => {
-        btn.disabled = true;
-        btn.textContent = 'Vote Disabled';
-        btn.style.backgroundColor = '#555';
-      });
-    }
-
-    function vote(index) {
-      if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
-        alert('You have already voted on another leaderboard.');
-        disableAllVotes();
-        return;
-      }
-
-      if (votesData.votedFlags[index]) return;
-
-      votesData.votes[index]++;
-      votesData.votedFlags[index] = true;
-
-      saveVotes(votesData.votes);
-      saveVotedFlags(votesData.votedFlags);
-      localStorage.setItem(HAS_VOTED_ANY_KEY, 'true');
-
-      displayVotes(votesData.votes);
-      updateButtonState(votesData.votedFlags);
-      disableAllVotes();
-      document.getElementById('info-msg').textContent = 'Thanks! You can only vote once total across all MOST pages.';
-    }
-
-    function resetVotesNow() {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_DATE_KEY);
-      localStorage.removeItem(STORAGE_VOTED_KEY);
+    if (!storedDate || now - storedDate > RESET_DAYS * 86400000) {
+      localStorage.setItem(STORAGE_DATE_KEY, now);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([0,0,0,0,0]));
+      localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false,false,false,false,false]));
       localStorage.removeItem(HAS_VOTED_ANY_KEY);
-      alert('Votes have been reset. Refresh the page.');
-      location.reload();
+      return { votes: [0,0,0,0,0], votedFlags: [false,false,false,false,false] };
+    } else {
+      const votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[0,0,0,0,0]');
+      const votedFlags = JSON.parse(localStorage.getItem(STORAGE_VOTED_KEY) || '[false,false,false,false,false]');
+      return { votes, votedFlags };
     }
+  }
 
-    const votesData = loadVotes();
-    displayVotes(votesData.votes);
-    updateButtonState(votesData.votedFlags);
+  function saveVotes(votes) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+  }
 
+  function saveVotedFlags(flags) {
+    localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify(flags));
+  }
+
+  function vote(index) {
     if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
-      disableAllVotes();
-      document.getElementById('info-msg').textContent = 'You have already voted on another leaderboard.';
+      alert("You already voted.");
+      return;
     }
-  </script>
+
+    if (data.votedFlags[index]) return;
+
+    data.votes[index]++;
+    data.votedFlags[index] = true;
+    localStorage.setItem(HAS_VOTED_ANY_KEY, 'true');
+
+    saveVotes(data.votes);
+    saveVotedFlags(data.votedFlags);
+    renderLeaderboard();
+  }
+
+  function disableAllVotes() {
+    const buttons = document.querySelectorAll(".vote-button");
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      btn.textContent = "Vote Disabled";
+    });
+  }
+
+  function renderLeaderboard() {
+    const leaderboard = document.getElementById("leaderboard");
+    leaderboard.innerHTML = "";
+
+    // Combine votes + names
+    const combined = USERS.map((name, i) => ({
+      name,
+      votes: data.votes[i],
+      index: i
+    }));
+
+    // Sort by most votes
+    combined.sort((a, b) => b.votes - a.votes);
+
+    // Render sorted list
+    combined.forEach((user, rank) => {
+      const li = document.createElement("div");
+      li.innerHTML = `
+        <div style="margin-bottom: 20px;">
+          <strong>${rank + 1 === 1 ? "🥇" : rank + 1 === 2 ? "🥈" : rank + 1 === 3 ? "🥉" : `${rank + 1}.`}</strong>
+          <strong>${user.name}</strong><br>
+          <button class="vote-button" id="vote-btn-${user.index}" onclick="vote(${user.index})">Vote</button>
+          <div class="votes">Votes: ${user.votes}</div>
+        </div>
+      `;
+      leaderboard.appendChild(li);
+
+      // Disable buttons if voted
+      const btn = document.getElementById(`vote-btn-${user.index}`);
+      if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
+        btn.disabled = true;
+        btn.textContent = "Voted";
+      }
+    });
+
+    // Message
+    if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
+      const msg = document.createElement("div");
+      msg.style.color = "#ffcc00";
+      msg.style.marginTop = "20px";
+      msg.textContent = "You have already voted.";
+      leaderboard.appendChild(msg);
+    }
+  }
+
+  const data = loadVotes();
+  renderLeaderboard();
+</script>
 
 </body>
 </html>
