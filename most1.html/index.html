@@ -1,89 +1,79 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <title>Leaderboard MOST 1</title>
+  <title>Leaderboard – MOST 1</title>
   <style>
     body { background: black; color: white; font-family: sans-serif; text-align: center; padding: 40px; }
-    .entry { background: #111; margin: 20px auto; padding: 15px; max-width: 400px; border-radius: 5px; }
+    .entry { background: #111; border-radius: 5px; margin: 20px auto; padding: 15px; max-width: 400px; }
     .votes { color: #00ff88; font-weight: bold; }
-    .vote-button { margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor:pointer; }
-    .vote-button:disabled { background: #555; cursor: not-allowed; }
-    #info-msg { margin-top:20px; color:#ffcc00; }
+    .vote-button { margin-top: 10px; padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .vote-button:disabled { background-color: #555; cursor: not-allowed; }
   </style>
 </head>
 <body>
   <h1>Leaderboard – MOST 1</h1>
   <div id="leaderboard"></div>
-  <div id="info-msg"></div>
+  <div id="info-msg" style="margin-top: 20px; color: #ffcc00;"></div>
 
   <script>
-    const USERS = ["NAVARO", "ABEJUELA", "BODUMO", "ATIENZA"];
-    const VOTE_API = "api/vote.ts";
-    let votes = [0,0,0,0];
-    let voted = false;
+    const USERS = ["User1", "User2", "User3", "User4"];
+    const PAGE = "most1";
+    const API_URL = `/api/vote?page=${PAGE}`;
+    const VOTED_KEY = "last_vote_time";
+    const COOLDOWN = 86400000; // 1 day in milliseconds
 
-    function saveVotedFlag() {
-      localStorage.setItem("most1_voted", "true");
-    }
-    function hasVoted() {
-      return localStorage.getItem("most1_voted") === "true";
+    let votes = [0, 0, 0, 0];
+
+    function canVoteNow() {
+      const lastVoteTime = parseInt(localStorage.getItem(VOTED_KEY));
+      if (!lastVoteTime) return true;
+      return Date.now() - lastVoteTime > COOLDOWN;
     }
 
     async function fetchVotes() {
-      try {
-        const res = await fetch(VOTE_API);
-        const data = await res.json();
-        votes = data.votes;
-        render();
-      } catch(e) {
-        document.getElementById("info-msg").textContent = "Error fetching votes";
-      }
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      votes = data.votes;
+      render();
     }
 
-    async function vote(index) {
-      if (voted || hasVoted()) {
-        alert("You already voted on this page.");
+    async function sendVote(index) {
+      if (!canVoteNow()) {
+        alert("You already voted. Try again in 24 hours.");
         return;
       }
-      try {
-        const res = await fetch(VOTE_API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ index }),
-        });
-        const data = await res.json();
-        votes = data.votes;
-        voted = true;
-        saveVotedFlag();
-        render();
-      } catch(e) {
-        alert("Vote failed. Try again.");
-      }
+      const res = await fetch('/api/vote', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ page: PAGE, index })
+      });
+      const data = await res.json();
+      votes = data.votes;
+      localStorage.setItem(VOTED_KEY, Date.now().toString());
+      render();
     }
 
     function render() {
-      const board = document.getElementById("leaderboard");
-      board.innerHTML = "";
-      const combined = USERS.map((name, i) => ({ name, votes: votes[i], index: i }));
-      combined.sort((a,b) => b.votes - a.votes);
+      const container = document.getElementById("leaderboard");
+      container.innerHTML = "";
+      const ranked = USERS.map((name, i) => ({ name, index: i, votes: votes[i] }))
+                          .sort((a, b) => b.votes - a.votes);
 
-      combined.forEach((user, rank) => {
+      ranked.forEach((u, rank) => {
         const div = document.createElement("div");
         div.className = "entry";
         div.innerHTML = `
-          <div><strong>${["🥇","🥈","🥉"][rank]||rank+1} ${user.name}</strong></div>
-          <div class="votes">Votes: ${user.votes}</div>
-          <button class="vote-button" onclick="vote(${user.index})" ${voted || hasVoted() ? "disabled" : ""}>Vote</button>
+          <div><strong>${["🥇","🥈","🥉"][rank]||rank+1} ${u.name}</strong></div>
+          <div class="votes">Votes: ${u.votes}</div>
+          <button class="vote-button" onclick="sendVote(${u.index})" ${!canVoteNow() ? "disabled" : ""}>Vote</button>
         `;
-        board.appendChild(div);
+        container.appendChild(div);
       });
 
-      if (voted || hasVoted()) {
-        document.getElementById("info-msg").textContent = "You already voted on this page.";
-      } else {
-        document.getElementById("info-msg").textContent = "";
-      }
+      document.getElementById("info-msg").textContent = canVoteNow()
+        ? "You can vote now!"
+        : "You already voted. Come back in 24 hours.";
     }
 
     fetchVotes();
