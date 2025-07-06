@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Leaderboard – MOST 1</title>
   <style>
+    /* same styles as before */
     body {
       background-color: #000;
       color: white;
@@ -39,9 +40,14 @@
       border-radius: 4px;
       font-size: 14px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-    .vote-button:hover {
+    .vote-button:hover:not(:disabled) {
       background-color: #218838;
+    }
+    .vote-button:disabled {
+      background-color: #555 !important;
+      cursor: not-allowed;
     }
     .votes {
       color: #00ff88;
@@ -56,113 +62,153 @@
       color: white;
       text-decoration: none;
       border-radius: 5px;
+      transition: background-color 0.3s ease;
     }
     a.back:hover {
       background-color: #0056b3;
+    }
+    .info-msg {
+      margin-top: 20px;
+      color: #ffcc00;
+      font-style: italic;
     }
   </style>
 </head>
 <body>
 
-  <h1>Leaderboard – MOST HANDSOME</h1>
+  <h1>Leaderboard – MOST 1</h1>
 
   <ul class="leaderboard">
     <li>
-      🥇 <strong>NAVARRO</strong> – POGI NA MAY PAG KA INGAY<br />
-      <button class="vote-button" onclick="vote(0)">Vote</button>
+      🥇 <strong>User1</strong> – 1500 pts<br />
+      <button id="vote-btn-0" class="vote-button" onclick="vote(0)">Vote</button>
       <div class="votes" id="votes-0">Votes: 0</div>
     </li>
     <li>
-      🥈 <strong>ABEJUELA</strong> – MATALINO NA POGI<br />
-      <button class="vote-button" onclick="vote(1)">Vote</button>
+      🥈 <strong>User2</strong> – 1400 pts<br />
+      <button id="vote-btn-1" class="vote-button" onclick="vote(1)">Vote</button>
       <div class="votes" id="votes-1">Votes: 0</div>
     </li>
     <li>
-      🥉 <strong>BUDOMO</strong> – KUPAL NA POGI<br />
-      <button class="vote-button" onclick="vote(2)">Vote</button>
+      🥉 <strong>User3</strong> – 1300 pts<br />
+      <button id="vote-btn-2" class="vote-button" onclick="vote(2)">Vote</button>
       <div class="votes" id="votes-2">Votes: 0</div>
     </li>
     <li>
-      4. <strong>ATIENZA</strong> – POGI NA HALF ALIEN<br />
-      <button class="vote-button" onclick="vote(3)">Vote</button>
+      4. <strong>User4</strong> – 1200 pts<br />
+      <button id="vote-btn-3" class="vote-button" onclick="vote(3)">Vote</button>
       <div class="votes" id="votes-3">Votes: 0</div>
     </li>
     <li>
-      5. <strong>LORENZO</strong> – POGI NA LAGING LATE<br />
-      <button class="vote-button" onclick="vote(4)">Vote</button>
+      5. <strong>User5</strong> – 1100 pts<br />
+      <button id="vote-btn-4" class="vote-button" onclick="vote(4)">Vote</button>
       <div class="votes" id="votes-4">Votes: 0</div>
     </li>
   </ul>
 
   <a href="index.html" class="back">⬅ Back to 7-PAUL</a>
 
+  <div class="info-msg" id="info-msg"></div>
+
   <script>
-  const STORAGE_KEY = 'most1_votes';
-  const STORAGE_DATE_KEY = 'most1_votes_date';
-  const STORAGE_VOTED_KEY = 'most1_voted_flags'; // Track voted users
-  const RESET_DAYS = 5;
+    const STORAGE_KEY = 'most1_votes';
+    const STORAGE_DATE_KEY = 'most1_votes_date';
+    const STORAGE_VOTED_KEY = 'most1_voted_flags';
+    const RESET_DAYS = 5;
+    const HAS_VOTED_ANY_KEY = 'hasVotedAnyMost';
 
-  // Load votes or initialize
-  function loadVotes() {
-    let storedDate = localStorage.getItem(STORAGE_DATE_KEY);
-    let now = new Date().getTime();
+    function loadVotes() {
+      const storedDate = localStorage.getItem(STORAGE_DATE_KEY);
+      const now = Date.now();
 
-    if (!storedDate || now - storedDate > RESET_DAYS * 24 * 60 * 60 * 1000) {
-      localStorage.setItem(STORAGE_DATE_KEY, now);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([0, 0, 0, 0, 0]));
-      localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false, false, false, false, false]));
-      return {
-        votes: [0, 0, 0, 0, 0],
-        votedFlags: [false, false, false, false, false]
-      };
-    } else {
-      let votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[0,0,0,0,0]');
-      let votedFlags = JSON.parse(localStorage.getItem(STORAGE_VOTED_KEY) || '[false,false,false,false,false]');
-      return { votes, votedFlags };
+      if (!storedDate || now - storedDate > RESET_DAYS * 24 * 60 * 60 * 1000) {
+        localStorage.setItem(STORAGE_DATE_KEY, now);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([0,0,0,0,0]));
+        localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify([false,false,false,false,false]));
+        localStorage.removeItem(HAS_VOTED_ANY_KEY); // reset global vote flag
+        return {
+          votes: [0,0,0,0,0],
+          votedFlags: [false,false,false,false,false]
+        };
+      } else {
+        const votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[0,0,0,0,0]');
+        const votedFlags = JSON.parse(localStorage.getItem(STORAGE_VOTED_KEY) || '[false,false,false,false,false]');
+        return { votes, votedFlags };
+      }
     }
-  }
 
-  function saveVotes(votes) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
-  }
+    function saveVotes(votes) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+    }
 
-  function saveVotedFlags(flags) {
-    localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify(flags));
-  }
+    function saveVotedFlags(flags) {
+      localStorage.setItem(STORAGE_VOTED_KEY, JSON.stringify(flags));
+    }
 
-  function displayVotes(votes) {
-    votes.forEach((count, idx) => {
-      document.getElementById(`votes-${idx}`).textContent = `Votes: ${count}`;
-    });
-  }
+    function displayVotes(votes) {
+      votes.forEach((count, idx) => {
+        document.getElementById(`votes-${idx}`).textContent = `Votes: ${count}`;
+      });
+    }
 
-  function updateButtonState(votedFlags) {
-    votedFlags.forEach((voted, idx) => {
-      const btn = document.getElementById(`vote-btn-${idx}`);
-      if (voted) {
+    function updateButtonState(votedFlags) {
+      votedFlags.forEach((voted, idx) => {
+        const btn = document.getElementById(`vote-btn-${idx}`);
+        if (voted) {
+          btn.disabled = true;
+          btn.textContent = 'Voted';
+        }
+      });
+    }
+
+    function disableAllVotes() {
+      const buttons = document.querySelectorAll('.vote-button');
+      buttons.forEach(btn => {
         btn.disabled = true;
-        btn.textContent = 'Voted';
+        btn.textContent = 'Vote Disabled';
         btn.style.backgroundColor = '#555';
         btn.style.cursor = 'not-allowed';
+      });
+    }
+
+    function vote(index) {
+      if (localStorage.getItem(HAS_VOTED_ANY_KEY)) {
+        alert('You have already voted on another leaderboard. Only one vote allowed.');
+        disableAllVotes();
+        return;
       }
-    });
-  }
 
-  function vote(index) {
-    if (votesData.votedFlags[index]) return; // Already voted
+      if (votesData.votedFlags[index]) return;
 
-    votesData.votes[index]++;
-    votesData.votedFlags[index] = true;
+      votesData.votes[index]++;
+      votesData.votedFlags[index] = true;
 
-    saveVotes(votesData.votes);
-    saveVotedFlags(votesData.votedFlags);
+      saveVotes(votesData.votes);
+      saveVotedFlags(votesData.votedFlags);
 
+      // Mark global flag
+      localStorage.setItem(HAS_VOTED_ANY_KEY, 'true');
+
+      displayVotes(votesData.votes);
+      updateButtonState(votesData.votedFlags);
+
+      // Disable all other buttons
+      disableAllVotes();
+
+      document.getElementById('info-msg').textContent = 'Thanks for voting! You can only vote once across all leaderboards.';
+    }
+
+    // On load
+    const votesData = loadVotes();
     displayVotes(votesData.votes);
     updateButtonState(votesData.votedFlags);
-  }
 
-  // Initialize
-  let votesData = loadVotes();
-  displayVotes(votesData.votes);
-  updateButtonState(votesData.votedFlags);
-</script>
+    // Disable all if already voted anywhere
+    if(localStorage.getItem(HAS_VOTED_ANY_KEY)) {
+      disableAllVotes();
+      document.getElementById('info-msg').textContent = 'You have already voted on another leaderboard. Voting disabled.';
+    }
+  </script>
+
+</body>
+</html>
