@@ -1,12 +1,13 @@
-let votes = {
-  most1: [0, 0, 0, 0],
-  most2: [0, 0, 0, 0],
-  most3: [0, 0, 0, 0],
-  most4: [0, 0, 0, 0],
-  most5: [0, 0, 0, 0],
-  most6: [0, 0, 0, 0],
-  most7: [0, 0, 0, 0],
+// api/vote.js
+// Simple in-memory vote storage for pages most1–most4
+const votesDB = {
+  most1: [0,0,0,0],
+  most2: [0,0,0,0],
+  most3: [0,0,0,0],
+  most4: [0,0,0,0]
 };
+
+// Rate-limit tracking per IP or headers not required; cooldown enforced client-side
 
 export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,24 +16,23 @@ export default function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { page, index } = req.method === 'POST' ? req.body : req.query;
-
-  if (!votes[page]) {
-    return res.status(400).json({ error: "Invalid page" });
+  const page = req.method === 'GET' ? req.query.page : req.body.page;
+  if (!['most1','most2','most3','most4'].includes(page)) {
+    return res.status(400).json({ error: 'Invalid page' });
   }
 
   if (req.method === 'GET') {
-    return res.status(200).json({ votes: votes[page] });
-  }
-
-  if (req.method === 'POST') {
-    if (typeof index !== 'number' || index < 0 || index >= votes[page].length) {
-      return res.status(400).json({ error: 'Invalid vote index' });
+    return res.status(200).json({ votes: votesDB[page] });
+  } 
+  else if (req.method === 'POST') {
+    const { index } = req.body;
+    if (typeof index !== 'number' || index < 0 || index > 3) {
+      return res.status(400).json({ error: 'Invalid index' });
     }
-
-    votes[page][index]++;
-    return res.status(200).json({ votes: votes[page] });
+    votesDB[page][index]++;
+    return res.status(200).json({ votes: votesDB[page] });
+  } 
+  else {
+    return res.status(405).end();
   }
-
-  res.status(405).end();
 }
